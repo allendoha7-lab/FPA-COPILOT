@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import os
 import plotly.express as px
+import plotly.graph_objects as go
+import textwrap
 from groq import Groq
 
 # ----------------------------------------------------------------------
@@ -14,10 +16,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Comprehensive CSS to override backgrounds, labels, charts, and layout framing
 executive_beige_css = """
 <style>
-    /* Global Base Canvas Configuration - Premium Light Beige/Cream Canvas */
     html, body, [data-testid="stSidebarUserContent"], .stApp {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 15px !important;
@@ -25,13 +25,11 @@ executive_beige_css = """
         background-color: #FDFBF7;
     }
     
-    /* Executive Sidebar Override Layout */
     [data-testid="stSidebar"] {
         background-color: #F4F1EA !important;
         border-right: 1px solid #E4E0D5 !important;
     }
     
-    /* Executive Core Headings */
     h1 {
         font-size: 26px !important;
         font-weight: 700 !important;
@@ -50,12 +48,10 @@ executive_beige_css = """
         margin-bottom: 14px !important;
     }
 
-    /* Page Canvas Framing Padding */
     .block-container {
         padding: 3rem 4rem !important;
     }
     
-    /* Fix alignment for Operational Parameters row elements */
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
@@ -65,14 +61,12 @@ executive_beige_css = """
         margin-bottom: 0px !important;
     }
     
-    /* Universal Widget Label Fix */
     [data-testid="stWidgetLabel"] p {
         color: #44403C !important;
         font-weight: 600 !important;
         font-size: 14px !important;
     }
     
-    /* Standard Text Input & Numeric Field Wrappers */
     div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
         border: 1px solid #D6D3D1 !important;
@@ -84,14 +78,12 @@ executive_beige_css = """
         background-color: #FFFFFF !important;
     }
     
-    /* Numeric Input Control Panel (+ and - buttons background match) */
     div[data-baseweb="input"] button {
         background-color: #F5F5F4 !important;
         color: #1C1917 !important;
         border-left: 1px solid #D6D3D1 !important;
     }
     
-    /* File Ingestion Drop Area Container */
     [data-testid="stFileUploader"] {
         background-color: #FFFFFF !important;
         border: 1px dashed #A8A29E !important;
@@ -120,7 +112,6 @@ executive_beige_css = """
         color: #FFFFFF !important;
     }
     
-    /* Main Action Run Buttons */
     .stButton > button {
         background-color: #1E3A8A !important;
         color: #FFFFFF !important;
@@ -138,7 +129,6 @@ executive_beige_css = """
         color: #FFFFFF !important;
     }
     
-    /* Consolidated Financial KPI Metrics Panel Grid */
     [data-testid="stMetric"] {
         background-color: #FFFFFF !important;
         padding: 20px 24px !important;
@@ -159,7 +149,6 @@ executive_beige_css = """
         font-weight: 600 !important;
     }
     
-    /* Financial Data Grid Tables */
     .stDataFrame, table {
         font-size: 13.5px !important;
         background-color: #FFFFFF !important;
@@ -167,7 +156,6 @@ executive_beige_css = """
         border-radius: 8px !important;
     }
     
-    /* Tab System Navigation Elements */
     button[data-baseweb="tab"] {
         font-size: 14px !important;
         font-weight: 600 !important;
@@ -178,7 +166,6 @@ executive_beige_css = """
         border-bottom-color: #1E3A8A !important;
     }
     
-    /* Polished Narrative Board Brief Card Box Layout */
     .executive-brief-box {
         background-color: #FFFFFF;
         padding: 32px;
@@ -226,7 +213,7 @@ executive_beige_css = """
 st.markdown(executive_beige_css, unsafe_allow_html=True)
 
 # ----------------------------------------------------------------------
-# 2. Gatekeepers & Initialization (Groq Environment Authentication)
+# 2. Gatekeepers & Initialization
 # ----------------------------------------------------------------------
 @st.cache_resource
 def get_groq_client():
@@ -250,7 +237,7 @@ def infer_financial_category(item_name):
         return 'Operating Expense'
 
 # ----------------------------------------------------------------------
-# 4. Core Engine Pipelines (With Selected Sheet Processing Support)
+# 4. Core Engine Pipelines
 # ----------------------------------------------------------------------
 def process_variance_sheet(file, threshold_pct=5.0, revenue_sim_pct=0.0, expense_sim_pct=0.0, selected_sheet=None):
     try:
@@ -347,8 +334,6 @@ def process_variance_sheet(file, threshold_pct=5.0, revenue_sim_pct=0.0, expense
             a_num = a_num * (1.0 + (expense_sim_pct / 100.0))
 
         abs_var = a_num - b_num
-        
-        # FIXED AND HARDENED: Incorporated abs(b_num) on denominator to handle negative baseline accounting entries safely
         pct_var = (abs_var / abs(b_num) * 100) if b_num != 0 else 0.0
         
         if cat_val == 'Revenue':
@@ -446,48 +431,124 @@ def style_row_by_category(df_slice):
     styles.loc[is_rev, :] = 'background-color: rgba(30, 58, 138, 0.04); font-weight: 500;'
     return styles
 
+# ----------------------------------------------------------------------
+# CHART FIX 1: Explicit "Outside" Anchoring & Enforced Axis Pads
+# ----------------------------------------------------------------------
 def render_horizontal_bar_chart(df, title_label):
     df_sorted = df.sort_values(by='percentage_variance', ascending=True)
     df_sorted['bar_color'] = df_sorted['materiality_status'].apply(
         lambda status: '#10B981' if status == 'Favorable' else '#EF4444'
     )
+    
+    min_val = df_sorted['percentage_variance'].min()
+    max_val = df_sorted['percentage_variance'].max()
+    
+    # FIXED: Enforce a strict minimum buffer of +/- 15% so small numbers never hit the edges
+    x_min = min_val * 1.5 if min_val < -10.0 else -15.0
+    x_max = max_val * 1.5 if max_val > 10.0 else 15.0
+
     fig = px.bar(
         df_sorted,
         x="percentage_variance",
         y="line item",
         orientation='h',
-        text_auto='.3f',
         labels={"percentage_variance": "Percentage Variance (%)", "line item": "Line Item"}
     )
+    
+    # FIXED: Hard-code textposition="outside" so Plotly never tries to squish text into a tiny bar
     fig.update_traces(
         marker_color=df_sorted['bar_color'],
-        textposition="outside",
-        textfont=dict(size=11, color='#1E293B'),
-        cliponaxis=False
+        text=df_sorted['percentage_variance'].apply(lambda x: f" {x:+.3f}% "),
+        textposition="outside", 
+        textfont=dict(size=11, color='#1C1917'),
+        cliponaxis=False 
     )
+    
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(showgrid=True, gridcolor='#E2E8F0', zeroline=True, zerolinecolor='#94A3B8', zerolinewidth=1.5, ticksuffix="%"),
+        xaxis=dict(
+            showgrid=True, 
+            gridcolor='#E2E8F0', 
+            zeroline=True, 
+            zerolinecolor='#94A3B8', 
+            zerolinewidth=2.0, 
+            ticksuffix="%",
+            range=[x_min, x_max]
+        ),
         yaxis=dict(showgrid=False, autorange="reversed"),
-        margin=dict(l=180, r=40, t=10, b=10),
-        height=max(280, len(df_sorted) * 35),
+        margin=dict(l=200, r=80, t=20, b=20),
+        height=max(300, len(df_sorted) * 38),
         font=dict(family="-apple-system, BlinkMacSystemFont, sans-serif", size=12)
+    )
+    
+    fig.add_vline(x=10.0, line_width=1.5, line_dash="dash", line_color="#EF4444")
+    fig.add_vline(x=-10.0, line_width=1.5, line_dash="dash", line_color="#EF4444")
+    
+    return fig
+
+# ----------------------------------------------------------------------
+# CHART FIX 2: Vertical Waterfalls + Auto Text-Wrapping Line Items
+# ----------------------------------------------------------------------
+def render_corporate_waterfall_chart(df, is_revenue_stream=True):
+    base_budget = df['budget'].sum()
+    
+    # FIXED: Use Python textwrap to insert HTML line-breaks (<br>) so labels stack perfectly
+    raw_labels = ["Total Budget Base"] + df['line item'].tolist() + ["Realized Outcome"]
+    line_labels = ["<br>".join(textwrap.wrap(str(l), width=14)) for l in raw_labels]
+    
+    deltas = df['absolute_variance'].tolist()
+    text_stamps = [f"₹{base_budget:,.0f}"]
+    
+    for x in deltas:
+        text_stamps.append(f"{x:+,.0f}")
+        
+    actual_total = df['actual'].sum()
+    text_stamps.append(f"₹{actual_total:,.0f}")
+    
+    measure_modes = ["absolute"] + ["relative"] * len(df) + ["total"]
+    value_walks = [base_budget] + deltas + [0.0]
+    
+    # FIXED: Orientation reverted to "v". Vertical waterfalls handle text perfectly.
+    fig = go.Figure(go.Waterfall(
+        name="Bridge Walk",
+        orientation="v", 
+        measure=measure_modes,
+        x=line_labels,
+        y=value_walks,
+        textposition="outside",
+        text=text_stamps,
+        connector={"line": {"color": "#94A3B8", "width": 1.5, "dash": "dot"}},
+        totals={"marker": {"color": "#1E3A8A"}},
+        decreasing={"marker": {"color": "#EF4444" if is_revenue_stream else "#10B981"}},
+        increasing={"marker": {"color": "#10B981" if is_revenue_stream else "#EF4444"}}
+    ))
+
+    # Calculate top ceiling so text never clips out the top of the container
+    y_max = max(value_walks)
+    if actual_total > y_max: y_max = actual_total
+    if base_budget > y_max: y_max = base_budget
+
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        yaxis=dict(showgrid=True, gridcolor='#E2E8F0', tickprefix="₹", range=[0, y_max * 1.15]),
+        xaxis=dict(tickangle=0), # Keep labels flat because we wrapped them nicely!
+        margin=dict(l=60, r=40, t=40, b=80), # Large bottom margin for stacked names
+        height=500, # Taller canvas to let the columns breathe
+        font=dict(family="-apple-system, BlinkMacSystemFont, sans-serif", size=11)
     )
     return fig
 
 # ----------------------------------------------------------------------
 # 6. UI Render Layout Loop
 # ----------------------------------------------------------------------
-st.markdown("<h1>Corporate FP&A Copilot: Variance Analysis Engine</h1>", unsafe_allow_html=True)
-
 with st.sidebar:
     st.markdown("## 🎛️ Sensitivity Simulators")
     revenue_sim = st.slider("Simulated Revenue Shift (%)", min_value=-50.0, max_value=50.0, value=0.0, step=0.5, format="%.3f%%")
     expense_sim = st.slider("Simulated Expense Shift (%)", min_value=-50.0, max_value=50.0, value=0.0, step=0.5, format="%.3f%%")
     
     st.markdown("---")
-    # Dynamic dashboard view option step slider control configuration
     st.markdown("## 📊 Executive View Option")
     dashboard_view_mode = st.slider(
         label="Select Dashboard View Profile",
@@ -497,7 +558,7 @@ with st.sidebar:
         step=1,
         help="1: Standard Matrix | 2: Stream Breakdown | 3: Macro CFO Deep-Dive"
     )
-    view_labels = {1: "1: Standard Unified Matrix", 2: "2: Consolidated Stream Breakdown", 3: "3: Macro CFO Deep-Dive"}
+    view_labels = {1: "1: Standard Unified Matrix", 2: "2: Consolidated Stream Breakdown", 3: "3: Macro CFO Deep-Dive (Waterfall Walk)"}
     st.caption(f"**Active View:** `{view_labels[dashboard_view_mode]}`")
 
     st.markdown("---")
@@ -521,7 +582,6 @@ if uploaded_file is not None:
     full_matrix, material_matrix = process_variance_sheet(uploaded_file, materiality_threshold, revenue_sim, expense_sim, selected_sheet)
     
     if full_matrix is not None and not full_matrix.empty:
-        # Separate individual transactional variance streams securely
         rev_mask = full_matrix['category'].str.strip().str.lower() == 'revenue'
         exp_mask = ~rev_mask
         
@@ -581,18 +641,20 @@ if uploaded_file is not None:
                 st.info("Zero variance anomalies recorded within target boundaries.")
                 
         with tab2:
-            if not material_matrix.empty:
+            if not full_matrix.empty:
+                full_rev_df = full_matrix[full_matrix['category'].str.strip().str.lower() == 'revenue']
+                full_exp_df = full_matrix[full_matrix['category'].str.strip().str.lower() != 'revenue']
+                
                 mat_rev_df = material_matrix[material_matrix['category'].str.strip().str.lower() == 'revenue']
                 mat_exp_df = material_matrix[material_matrix['category'].str.strip().str.lower() != 'revenue']
 
-                # Dynamic step-slider canvas selector routing tree
                 if dashboard_view_mode == 1:
-                    st.markdown("### Profile 1: Standard Outlier Variance Matrix")
+                    st.markdown("### Profile 1: Standard Outlier Variance Matrix (With 10% Risk Boundaries)")
                     fig_all = render_horizontal_bar_chart(material_matrix, "All Anomalies")
                     st.plotly_chart(fig_all, use_container_width=True, config={'displayModeBar': False})
                     
                 elif dashboard_view_mode == 2:
-                    st.markdown("### Profile 2: Consolidated Stream Breakdown (Side-by-Side View)")
+                    st.markdown("### Profile 2: Consolidated Stream Breakdown (With 10% Risk Boundaries)")
                     v_col1, v_col2 = st.columns(2)
                     with v_col1:
                         st.markdown("#### Revenue Channel Deviations")
@@ -610,23 +672,22 @@ if uploaded_file is not None:
                             st.info("No standalone material expenditure variances to render.")
                             
                 elif dashboard_view_mode == 3:
-                    st.markdown("### Profile 3: Macro CFO Deep-Dive (Stacked Executive Boardroom View)")
-                    
-                    st.markdown("#### Section A: Revenue Inflow Metrics Tracker")
-                    if not mat_rev_df.empty:
-                        fig_rev_full = render_horizontal_bar_chart(mat_rev_df, "Revenue Full")
-                        st.plotly_chart(fig_rev_full, use_container_width=True, config={'displayModeBar': False})
+                    st.markdown("### Profile 3: Macro CFO Deep-Dive (Corporate Variance Waterfall Bridges)")
+                    st.markdown("#### Section A: Revenue Inflow Walk Bridge (Budget to Actual)")
+                    if not full_rev_df.empty:
+                        fig_water_rev = render_corporate_waterfall_chart(full_rev_df, is_revenue_stream=True)
+                        st.plotly_chart(fig_water_rev, use_container_width=True, config={'displayModeBar': False})
                     else:
-                        st.info("No material revenue adjustments captured above threshold boundaries.")
+                        st.info("No revenue track item arrays available to compile bridge walk figures.")
                         
-                    st.markdown("#### Section B: Operational Expense & Spend Controls")
-                    if not mat_exp_df.empty:
-                        fig_exp_full = render_horizontal_bar_chart(mat_exp_df, "Expense Full")
-                        st.plotly_chart(fig_exp_full, use_container_width=True, config={'displayModeBar': False})
+                    st.markdown("#### Section B: Operational Expenditure Walk Bridge (Budget to Actual)")
+                    if not full_exp_df.empty:
+                        fig_water_exp = render_corporate_waterfall_chart(full_exp_df, is_revenue_stream=False)
+                        st.plotly_chart(fig_water_exp, use_container_width=True, config={'displayModeBar': False})
                     else:
-                        st.info("No material operational expenditure adjustments captured above threshold boundaries.")
+                        st.info("No cost track item arrays available to compile spend bridge walk figures.")
                         
-                st.caption("💡 Green bars highlight **Favorable** variances (Revenue beats or Cost savings). Red bars signify **Unfavorable** adjustments (Revenue misses or Expense spikes).")
+                st.caption("💡 Note: Horizontal charts feature explicit dashed vertical target lines at ±10% points to isolate risk-tolerance breaches. Waterfall walk charts provide an interactive step-by-step visual walk tracking cumulative accounting adjustments from Budget to Realized outcomes.")
             else:
                 st.info("No visual anomalies to map. All performance parameters match budget boundaries.")
                 
