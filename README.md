@@ -1,49 +1,41 @@
-# 📈 FP&A Copilot: Enterprise Variance Automation Engine
+# 📈 Corporate FP&A Copilot: AI-Powered Variance Automation Engine
 
-An AI-powered Financial Planning & Analysis (FP&A) assistant designed to automate transactional data processing, handle dynamic stress-testing simulations, and streamline complex boardroom reporting workflows.
+## 🏢 Executive Overview
+The **FP&A Copilot** is an enterprise-grade financial business intelligence application built to automate the most time-consuming aspects of the month-end closing cycle. It eliminates manual spreadsheet wrangling by dynamically parsing unstructured 'Budget vs. Actual' ERP exports, calculating GAAP-compliant performance metrics, and utilizing Generative AI to synthesize quantitative data into boardroom-ready qualitative narratives.
 
-This platform eliminates traditional month-end closing bottlenecks by translating unstructured, multi-sheet ERP spreadsheet dumps directly into GAAP/IFRS-compliant executive dashboards and automated analytical briefs.
-
----
-
-## 📁 Project Structure
-
-The repository contains the following core components:
-
-* **`app.py`**: The main application interface containing the data ingestion loop, multi-stream calculation layers, and reactive visualization states.
-* **`make_data.py`**: A utility script used to generate, format, or reset unstructured raw financial datasets for modeling.
-* **`requirements.txt`**: Complete registry of all required Python data engineering libraries and API packages.
-* **`run_copilot.command`**: A macOS shell script to initialize the local server and launch the application with a single double-click.
-* **`sample_data.xlsx`**: A template spreadsheet demonstrating multi-scenario data layouts across variable corporate schema naming conventions.
+Built with an "Executive First" UI philosophy, the application features a custom corporate theme, strict margin scaling, and mathematically robust visualizations designed specifically for CFO presentations.
 
 ---
 
-## 🎯 Production-Ready Milestones Implemented
+## 🚀 Core Architecture & Features
 
-* **Smart Schema Discovery Heuristic:** Employs an algorithmic weight-scoring header search loop built in Pandas to auto-locate transactional rows, strip out un-pivoted metadata noise, and map inconsistent column strings smoothly.
-* **Directional Scorecard Integrity:** Disaggregates data streams to respect corporate accounting logic—automatically capturing opex increases as inverted red risk-tolerance indicators while tracking net margins precisely.
-* **Risk Boundary Mapping (Feature 1B):** Injects explicit visual milestone lines across your chart canvases at $\pm10\%$ variance levels, letting executives instantly isolate parameter breaches.
-* **Variance Waterfall Bridges (Feature 2B):** Generates vertical waterfall walk graphs tracking cumulative adjustments sequentially from initial budget baselines to final actual positions.
-* **Automated Narrative Briefs:** Links data tables directly to GenAI middleware via the **Groq API Cloud Client** to transform quantitative mathematical anomalies into clear, prose-driven C-suite commentary memos.
+### 1. Algorithmic Schema Discovery (Ingestion Layer)
+* **Smart Header Detection:** Bypasses messy, un-pivoted ERP metadata using a custom Pandas weight-scoring heuristic to automatically locate transaction tables and identify exact headers.
+* **Semantic Normalization:** Strips out nested subtotals, blank padding, and currency markers (₹, $) to prevent double-counting and decimal truncation.
+
+### 2. Directional GAAP/IFRS Scorecard (Calculation Layer)
+* **Stream Disaggregation:** Programmatically separates top-line revenue inflows from operational expenditures.
+* **Inverted Risk Vectors:** Automatically maps cost overruns as unfavorable (Red) risk parameters while maintaining positive scaling for revenue wins (Green), ensuring bottom-line margins are calculated perfectly via absolute denominator handling.
+
+### 3. C-Suite Data Visualization (Analytics Layer)
+* **Dynamic Sensitivity Simulators:** Built-in sidebar levers allowing users to stress-test revenue and expense baselines ($\pm50\%$) with instantaneous ground-truth recalculations.
+* **Risk Boundary Matrix:** Horizontal variance charts featuring hard-coded $\pm15\%$ baseline buffers and explicit $\pm10\%$ dashed risk-tolerance threshold lines to isolate operational breaches.
+* **Macro Bridge Walks:** Vertical Waterfall charts powered by `Plotly Graph Objects` and Python `textwrap`, dynamically stacking long ledger names to create perfectly scaled cumulative step-walks from Initial Budget to Realized Outcomes.
+
+### 4. Automated Boardroom Briefs (GenAI Middleware)
+* **Outlier Context Binding:** Filters material anomalies and passes clean data arrays into a secure GenAI middleware pipeline (Powered by the Groq API Cloud Client).
+* **Structured Narrative Synthesis:** Automatically generates a formatted, objective executive brief separating the macro-economic summary, revenue wins, and operational cost audits.
+
+---
+
+## 🛠️ Technology Stack
+* **Language:** Python 3.13+
+* **Framework:** Streamlit (Custom Executive Beige CSS Injection)
+* **Data Engineering:** Pandas, NumPy
+* **Data Visualization:** Plotly Express, Plotly Graph Objects (`go.Waterfall`)
+* **AI Integration:** Groq SDK API (Llama-3.3 Versatile Architecture)
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-Make sure you have Python 3.11+ installed on your system.
-
-### Installation & Launch
-
-1. Clone or download this repository folder.
-2. Open your terminal and install the required dependencies:
-```bash
-pip install -r requirements.txt
-
-```
-
-
-3. Set your background environment authentication key, then double-click **`run_copilot.command`** to launch the environment instantly!
-
----
+## 💼 The Business Value
+In traditional finance environments, separating multi-sheet variance reports and generating qualitative narrative bridges eats up massive portions of the analytical cycle. This Copilot acts as a zero-touch pipeline—empowering leadership to stress-test performance live, instantly visualize operational milestones, and scale business visibility flawlessly.
